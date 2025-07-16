@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { attendanceService } from '../../services/attendanceService';
 
 interface AttendanceData {
@@ -16,7 +17,7 @@ const AttendanceChart: React.FC = () => {
       try {
         setLoading(true);
         const data = await attendanceService.getAll();
-       
+
         const attendanceMap: Record<string, { present: number; total: number }> = {};
 
         data.forEach((record: any) => {
@@ -46,30 +47,75 @@ const AttendanceChart: React.FC = () => {
     fetchAttendance();
   }, []);
 
-  if (loading) return <div>Loading attendance data...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <Text style={styles.message}>Loading attendance data...</Text>;
+  if (error) return <Text style={styles.error}>Error: {error}</Text>;
 
   return (
-    <div className="space-y-4">
+    <ScrollView style={styles.container}>
       {attendanceData.map((item) => (
-        <div key={item.name} className="space-y-1">
-          <div className="flex justify-between text-sm">
-            <span className="font-medium">{item.name}</span>
-            <span className="text-gray-500">{item.value}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-in-out"
-              style={{ width: `${item.value}%` }}
-            ></div>
-          </div>
-        </div>
+        <View key={item.name} style={styles.itemContainer}>
+          <View style={styles.labelRow}>
+            <Text style={styles.nameText}>{item.name}</Text>
+            <Text style={styles.valueText}>{item.value}%</Text>
+          </View>
+          <View style={styles.progressBarBackground}>
+            <View style={[styles.progressBarFill, { width: `${item.value}%` }]} />
+          </View>
+        </View>
       ))}
-      <div className="pt-2 text-sm text-gray-500 text-right">
-        Last updated: just now
-      </div>
-    </div>
+      <Text style={styles.lastUpdated}>Last updated: just now</Text>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+  },
+  message: {
+    padding: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  error: {
+    padding: 16,
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
+  },
+  itemContainer: {
+    marginBottom: 16,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  nameText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  valueText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  progressBarBackground: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 5,
+  },
+  progressBarFill: {
+    height: 10,
+    backgroundColor: '#2563eb',
+    borderRadius: 5,
+  },
+  lastUpdated: {
+    paddingTop: 8,
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'right',
+  },
+});
 
 export default AttendanceChart;

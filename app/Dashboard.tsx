@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import StatCard from '../components/dashboard/StatCard';
 import RecentFeePayments from '../components/dashboard/RecentFeePayments';
-import AttendanceChart from '../components/dashboard/AttendanceChart';
-import PerformanceWidget from '../components/dashboard/PerformanceWidget';
+// import AttendanceChart from '../components/dashboard/AttendanceChart';
+// import PerformanceWidget from '../components/dashboard/PerformanceWidget';
 import UpcomingExams from '../components/dashboard/UpcomingExams';
 import { studentService } from '../services/studentService';
 import supabase from '../lib/supabase';
@@ -17,11 +17,9 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        //total students
         const students = await studentService.getAll();
         setTotalStudents(students.length);
 
-        // Fetch fee summary from students table for fee collection using supabase client
         const { data: studentsData, error } = await supabase
           .from('students')
           .select('total_fee, paid_fee');
