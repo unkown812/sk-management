@@ -72,7 +72,6 @@ const Login: React.FC = () => {
 
           <View style={styles.rememberForgotContainer}>
             <View style={styles.rememberMe}>
-              {/* Checkbox is not built-in in React Native, so using TouchableOpacity as placeholder */}
               <TouchableOpacity style={styles.checkbox} onPress={() => { /* Implement remember me toggle if needed */ }}>
                 {/* Empty box for now */}
               </TouchableOpacity>

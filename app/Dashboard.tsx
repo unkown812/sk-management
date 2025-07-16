@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, CreditCard } from 'lucide-react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import StatCard from '../components/dashboard/StatCard';
 import RecentFeePayments from '../components/dashboard/RecentFeePayments';
 import AttendanceChart from '../components/dashboard/AttendanceChart';
@@ -42,73 +42,140 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Dashboard</Text>
+        <Text style={styles.subtitle}>
           Overview of SK Tutorials management system
-        </p>
-      </div>
+        </Text>
+      </View>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <View style={styles.statsGrid}>
         <StatCard
           title="Total Students"
           value={totalStudents}
           change={+1}
-          icon={<Users className="size-10" />}
-          color="text-blue-800"
-          bgcolor="bg-blue-50"
+          // Replace icon prop with appropriate React Native icon or remove
+          icon={null}
+          color="#1E40AF" // text-blue-800
+          bgcolor="#DBEAFE" // bg-blue-50
         />
         <StatCard
           title="Fee Collection"
           value={`₹${totalFeesCollected.toLocaleString()}`}
           change={+8.2}
-          icon={<CreditCard className="size-10" />}
-          color="text-green-800"
-          bgcolor="bg-green-50"
+          icon={null}
+          color="#166534" // text-green-800
+          bgcolor="#DCFCE7" // bg-green-50
         />
-      </div>
+      </View>
 
       {/* Charts and tables section */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* <div className="card">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Attendance Overview</h2>
+      <View style={styles.chartsGrid}>
+        {/* Uncomment and convert these components if needed */}
+        {/* <View style={styles.card}>
+          <Text style={styles.cardTitle}>Attendance Overview</Text>
           <AttendanceChart />
-        </div>
+        </View>
 
-        <div className="card">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Performance Overview</h2>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Performance Overview</Text>
           <PerformanceWidget />
-        </div> */}
-      </div>
+        </View> */}
+      </View>
 
       {/* Tables section */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="card overflow-hidden">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Fee Payments</h2>
+      <View style={styles.tablesGrid}>
+        <View style={[styles.card, styles.overflowHidden]}>
+          <Text style={styles.cardTitle}>Recent Fee Payments</Text>
           <RecentFeePayments />
-        </div>
+        </View>
 
-        <div className="card">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Upcoming Exams</h2>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Upcoming Exams</Text>
           <UpcomingExams />
-        </div>
-      </div>
+        </View>
+      </View>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-1">
-        <div className="card">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Due Date Reminders</h2>
+      <View style={styles.singleCardGrid}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Due Date Reminders</Text>
           <DueDateReminder />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-1">
-        <div className="card">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Birthday Reminders</h2>
+        </View>
+      </View>
+
+      <View style={styles.singleCardGrid}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Birthday Reminders</Text>
           <BirthdayReminder />
-        </div>
-      </div>
-    </div>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+  },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#111827', // text-gray-900
+  },
+  subtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#6B7280', // text-gray-500
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  chartsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  tablesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  singleCardGrid: {
+    marginBottom: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    flex: 1,
+    minWidth: '48%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  overflowHidden: {
+    overflow: 'hidden',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 12,
+  },
+});
 
 export default Dashboard;
