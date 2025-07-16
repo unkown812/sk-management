@@ -1,36 +1,67 @@
 import React from 'react';
-// import { TrendingUp, TrendingDown } from 'lucide-react';
+import { View, Text, StyleSheet } from 'react-native';
 
 interface StatCardProps {
   title: string;
   value: string | number;
-  change: number;
-  icon: React.ReactNode;
-  color: string;
-  bgcolor:string;
+  change?: number;
+  icon: React.ReactElement;
+  color?: string; 
+  bgcolor?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, bgcolor }) => {
-  
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color = '#000', bgcolor = '#fff' }) => {
   return (
-    <div className={`card transition-shadow hover:shadow-md ${bgcolor} ${color} border-none `}>
-      <div className="flex items-center">
-        <div className={`p-3 rounded-full ${color}`}>
+    <View style={[styles.card, { backgroundColor: bgcolor, borderColor: 'transparent' }]}>
+      <View style={styles.row}>
+        <View style={[styles.iconContainer, { backgroundColor: color }]}>
           {icon}
-        </div>
-        <div className="ml-5">
-          <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-          <div className="flex items-baseline">
-            <p className="text-2xl font-semibold ">{value}</p>
-            {/* <div className={`ml-2 flex items-center text-sm ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-              {isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-              <span>{Math.abs(change)}%</span>
-            </div> */}
-          </div>
-        </div>
-      </div>
-    </div>
+        </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.value, { color }]}>{value}</Text>
+          {/* Placeholder for change indicator */}
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    marginVertical: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    padding: 12,
+    borderRadius: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textContainer: {
+    marginLeft: 20,
+  },
+  title: {
+    fontSize: 14,
+    color: '#6b7280', // gray-500
+    fontWeight: '500',
+  },
+  value: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+});
 
 export default StatCard;

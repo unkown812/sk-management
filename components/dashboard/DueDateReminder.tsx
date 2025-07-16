@@ -1,25 +1,35 @@
 import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import supabase from '../../lib/supabase';
 
 interface Student {
   id?: number;
   name: string;
-  installment_dates?: string[];
+  paid_fees?: number;
+  due_amt?: number;
+  enrolled?: boolean;
 }
 
 const DueDateReminder: React.FC = () => {
-  const [dueTodayStudents, setDueTodayStudents] = useState<{student: Student, dueDates: string[]}[]>([]);
+  const [dueStudents, setDueStudents] = useState<Student[]>([]);
   const [showReminder, setShowReminder] = useState(true);
 
   useEffect(() => {
-    const fetchStudentsWithDueToday = async () => {
+    const fetchDueStudents = async () => {
       try {
         const todayDate = new Date();
-        const todayStr = todayDate.toISOString().split('T')[0]; // yyyy-mm-dd
+        const dayOfMonth = todayDate.getDate();
+
+        // Only show reminder on the first day of the month
+        if (dayOfMonth !== 1) {
+          setDueStudents([]);
+          setShowReminder(false);
+          return;
+        }
 
         const { data, error } = await supabase
           .from('students')
-          .select('id, name, installment_dates');
+          .select('id, name, paid_fees, due_amt, enrolled');
 
         if (error) {
           console.error('Error fetching students:', error);
@@ -27,41 +37,25 @@ const DueDateReminder: React.FC = () => {
         }
 
         if (data && data.length > 0) {
-          // Filter students who have installment_dates containing todayStr
-          const studentsDueToday = data
-            .map((student: Student) => {
-              const dueDatesToday = (student.installment_dates || []).filter(dateStr => dateStr === todayStr);
-              if (dueDatesToday.length > 0) {
-                return { student, dueDates: dueDatesToday };
-              }
-              return null;
-            })
-            .filter((item): item is {student: Student, dueDates: string[]} => item !== null);
+          // Filter students who are enrolled and have due fees
+          const studentsDue = data.filter(student => {
+            return student.enrolled && (student.paid_fees ?? 0) < (student.due_amt ?? 0);
+          });
 
-          if (studentsDueToday.length > 0) {
-            setDueTodayStudents(studentsDueToday);
+          if (studentsDue.length > 0) {
+            setDueStudents(studentsDue);
             setShowReminder(true);
 
-            // Show browser notification
-            if (Notification.permission === 'granted') {
-              new Notification('Installment Due Date Reminder', {
-                body: `You have ${studentsDueToday.length} student(s) with installment due today.`,
-              });
-            } else if (Notification.permission !== 'denied') {
-              Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                  new Notification('Installment Due Date Reminder', {
-                    body: `You have ${studentsDueToday.length} student(s) with installment due today.`,
-                  });
-                }
-              });
-            }
+            Alert.alert(
+              'Installment Reminder',
+              `You have ${studentsDue.length} student(s) with installment due this month.`
+            );
           } else {
-            setDueTodayStudents([]);
+            setDueStudents([]);
             setShowReminder(false);
           }
         } else {
-          setDueTodayStudents([]);
+          setDueStudents([]);
           setShowReminder(false);
         }
       } catch (err) {
@@ -69,36 +63,85 @@ const DueDateReminder: React.FC = () => {
       }
     };
 
-    fetchStudentsWithDueToday();
+    fetchDueStudents();
   }, []);
 
-  if (!showReminder || dueTodayStudents.length === 0) {
+  if (!showReminder || dueStudents.length === 0) {
     return null;
   }
 
   return (
-    <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4" role="alert">
-      <strong className="font-bold">Installment Due Date Reminder!</strong>
-      <span className="block sm:inline"> The following students have installment(s) due today ({new Date().toISOString().split('T')[0]}):</span>
-      <ul className="list-disc list-inside mt-2">
-        {dueTodayStudents.map(({student, dueDates}) => (
-          <li key={student.id}>
-            {student.name} - Due Date(s): {dueDates.join(', ')}
-          </li>
-        ))}
-      </ul>
-      <button
-        onClick={() => setShowReminder(false)}
-        className="absolute top-0 bottom-0 right-0 px-4 py-4"
-        aria-label="Close"
-      >
-        <svg className="fill-current h-6 w-6 text-yellow-700" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-          <title>Close</title>
-          <path d="M14.348 5.652a1 1 0 00-1.414 0L10 8.586 7.066 5.652a1 1 0 10-1.414 1.414L8.586 10l-2.934 2.934a1 1 0 101.414 1.414L10 11.414l2.934 2.934a1 1 0 001.414-1.414L11.414 10l2.934-2.934a1 1 0 000-1.414z"/>
-        </svg>
-      </button>
-    </div>
+    <View style={styles.container} accessibilityRole="alert">
+      <View style={styles.header}>
+        <Text style={styles.title}>Installment Reminder!</Text>
+        <TouchableOpacity
+          onPress={() => setShowReminder(false)}
+          accessibilityLabel="Close"
+          style={styles.closeButton}
+        >
+          <Text style={styles.closeButtonText}>×</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.message}>
+        The following students have installment(s) due this month:
+      </Text>
+      <FlatList
+        data={dueStudents}
+        keyExtractor={(item) => item.id?.toString() || item.name}
+        renderItem={({ item }) => (
+          <Text style={styles.studentName}>
+            • {item.name} - Due Amount: {item.due_amt} - Paid Fees: {item.paid_fees}
+          </Text>
+        )}
+        style={styles.list}
+      />
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#fefcbf', // yellow-100
+    borderColor: '#f6e05e', // yellow-400
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 6,
+    marginBottom: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    color: '#b7791f', // yellow-700
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  closeButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  closeButtonText: {
+    color: '#b7791f', // yellow-700
+    fontSize: 24,
+    lineHeight: 24,
+  },
+  message: {
+    color: '#b7791f', // yellow-700
+    marginTop: 8,
+    fontSize: 14,
+  },
+  list: {
+    marginTop: 8,
+  },
+  studentName: {
+    color: '#b7791f', // yellow-700
+    fontSize: 14,
+    marginLeft: 8,
+    marginBottom: 4,
+  },
+});
 
 export default DueDateReminder;

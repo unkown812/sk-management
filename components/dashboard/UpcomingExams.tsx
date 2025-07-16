@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import supabase from '../../lib/supabase';
+// You can replace this with a suitable React Native icon library
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface Exam {
   id: number;
@@ -34,21 +36,10 @@ const UpcomingExams: React.FC = () => {
         const examToday = examsData.find((exam) => exam.date === todayStr) || null;
         setTodayExam(examToday);
 
-        // Push notification if exam today
-        if (examToday && "Notification" in window) {
-          if (Notification.permission === "granted") {
-            new Notification("Exam Reminder", {
-              body: `You have an exam scheduled today: ${examToday.name}`,
-            });
-          } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-              if (permission === "granted") {
-                new Notification("Exam Reminder", {
-                  body: `You have an exam scheduled today: ${examToday.name}`,
-                });
-              }
-            });
-          }
+        // React Native does not support browser Notification API
+        // Use Alert as placeholder or integrate push notification library
+        if (examToday) {
+          Alert.alert('Exam Reminder', `You have an exam scheduled today: ${examToday.name}`);
         }
       } catch (err) {
         console.error('Unexpected error fetching exams:', err);
@@ -59,37 +50,108 @@ const UpcomingExams: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-4 overflow-y-scroll">
+    <ScrollView style={styles.container}>
       {todayExam && (
-        <div className="p-3 mb-4 border border-yellow-400 bg-yellow-50 rounded text-yellow-800 font-semibold">
-          Reminder: You have an exam scheduled today: {todayExam.name}
-        </div>
+        <View style={styles.reminder}>
+          <Text style={styles.reminderText}>
+            Reminder: You have an exam scheduled today: {todayExam.name}
+          </Text>
+        </View>
       )}
       {exams.map((exam) => (
-        <div key={exam.id} className="flex space-x-4 p-3 border rounded-lg hover:bg-gray-50">
-          <div className="flex-shrink-0 bg-blue-100 text-blue-800 rounded-lg p-3 text-center">
-            <Calendar className="h-5 w-5 mx-auto" />
-            <div className="text-xs mt-1 font-medium">
+        <TouchableOpacity key={exam.id} style={styles.examCard}>
+          <View style={styles.iconContainer}>
+            <MaterialIcons name="calendar-today" size={24} color="#2563eb" />
+            <Text style={styles.dateText}>
               {new Date(exam.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-medium">{exam.name}</h3>
-            <div className="flex flex-wrap gap-3 mt-1">
-              {exam.course && <span className="text-blue-600">{exam.course}</span>}
-              {exam.category && <span className="text-green-700">{exam.category}</span>}
-              {exam.year !== undefined && <span className="text-orange-600">{exam.year}th</span>}
-            </div>
-          </div>
-        </div>
+            </Text>
+          </View>
+          <View style={styles.examInfo}>
+            <Text style={styles.examName}>{exam.name}</Text>
+            <View style={styles.tagsContainer}>
+              {exam.course && <Text style={styles.courseTag}>{exam.course}</Text>}
+              {exam.category && <Text style={styles.categoryTag}>{exam.category}</Text>}
+              {exam.year !== undefined && <Text style={styles.yearTag}>{exam.year}th</Text>}
+            </View>
+          </View>
+        </TouchableOpacity>
       ))}
-      <div className="mt-2">
-        <button className="text-sm text-primary font-medium hover:underline">
-          View all exams →
-        </button>
-      </div>
-    </div>
+      <View style={styles.viewAllContainer}>
+        <TouchableOpacity onPress={() => { /* Placeholder for view all exams navigation */ }}>
+          <Text style={styles.viewAllText}>View all exams →</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 8,
+  },
+  reminder: {
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#fbbf24', // yellow-400
+    backgroundColor: '#fef3c7', // yellow-50
+    borderRadius: 8,
+  },
+  reminderText: {
+    color: '#b45309', // yellow-800
+    fontWeight: '600',
+  },
+  examCard: {
+    flexDirection: 'row',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db', // gray-300
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#eff6ff', // blue-100
+  },
+  iconContainer: {
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  dateText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#2563eb', // blue-800
+    fontWeight: '500',
+  },
+  examInfo: {
+    flex: 1,
+  },
+  examName: {
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+    gap: 8,
+  },
+  courseTag: {
+    color: '#2563eb', // blue-600
+    marginRight: 8,
+  },
+  categoryTag: {
+    color: '#15803d', // green-700
+    marginRight: 8,
+  },
+  yearTag: {
+    color: '#c2410c', // orange-600
+  },
+  viewAllContainer: {
+    marginTop: 8,
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: '#3b82f6', // primary blue
+    fontWeight: '600',
+  },
+});
 
 export default UpcomingExams;

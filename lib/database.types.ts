@@ -54,6 +54,7 @@ export interface Database {
         Row: {
           id: string
           student_id: string
+          student_name: string
           amount: number
           payment_date: string
           payment_method: string
