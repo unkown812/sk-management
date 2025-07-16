@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
-import supabase from '../lib/supabase';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  Switch,
+  Alert,
+} from 'react-native';
+// Icons from lucide-react are not compatible with React Native.
+// You can replace these with react-native-vector-icons or other icon libraries.
 import TabNav from '../components/ui/TabNav';
+import supabase from '../lib/supabase';
 
 interface Student {
   id: number;
@@ -22,15 +34,10 @@ const studentCategories = [
   'School',
   'Junior College',
   'Diploma',
-  'Entrance Exams'
+  'Entrance Exams',
 ];
 
-const schoolCourses = [
-  'SSC',
-  'CBSE',
-  'ICSE',
-  'Others',
-];
+const schoolCourses = ['SSC', 'CBSE', 'ICSE', 'Others'];
 
 const juniorCollegeCourses = ['Science', 'Commerce', 'Arts'];
 
@@ -129,7 +136,7 @@ const AttendancePage: React.FC = () => {
     fetchAttendance();
   }, [selectedMonth]);
 
-  const filteredStudents = React.useMemo(() => {
+  const filteredStudents = useMemo(() => {
     const lowerSearchTerm = searchTerm.toLowerCase();
     return students.filter(student => {
       const matchesSearch =
@@ -150,7 +157,7 @@ const AttendancePage: React.FC = () => {
     });
   }, [students, searchTerm, selectedCategory, selectedCourse, selectedYear]);
 
-  const groupedStudents = React.useMemo(() => {
+  const groupedStudents = useMemo(() => {
     const groups: Record<string, Record<string, Record<string, Student[]>>> = {};
     filteredStudents.forEach(student => {
       if (!groups[student.category]) groups[student.category] = {};
@@ -171,9 +178,9 @@ const AttendancePage: React.FC = () => {
   };
 
   // Sorting handlers
-  const [sortConfig, setSortConfig] = React.useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
-  const sortedGroupedStudents = React.useMemo(() => {
+  const sortedGroupedStudents = useMemo(() => {
     if (!sortConfig) return groupedStudents;
 
     const sortedGroups: Record<string, Record<string, Record<string, Student[]>>> = {};
@@ -239,60 +246,29 @@ const AttendancePage: React.FC = () => {
           recordsToInsert.push({
             student_id: studentId,
             date: date.toISOString().slice(0, 10),
-            status
+            status,
           });
         });
       });
 
       const { error: upsertError } = await supabase.from('attendance').upsert(recordsToInsert);
       if (upsertError) throw upsertError;
-      alert('Attendance saved successfully.');
+      Alert.alert('Success', 'Attendance saved successfully.');
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
       else setError('Unknown error');
-      alert('Failed to save attendance');
+      Alert.alert('Error', 'Failed to save attendance');
     }
     setLoading(false);
   };
 
-  const exportToCSV = () => {
-    const headers = ['Category', 'Course', 'Year', 'Student ID', 'Name'];
-    for (let day = 1; day <= daysInMonth; day++) {
-      headers.push(day.toString());
-    }
-    const rows: string[][] = [];
-    Object.entries(groupedStudents).forEach(([category, courses]) => {
-      Object.entries(courses).forEach(([course, years]) => {
-        Object.entries(years).forEach(([year, studentsList]) => {
-          studentsList.forEach(student => {
-            const row = [category, course, year, student.id.toString(), student.name];
-            for (let day = 1; day <= daysInMonth; day++) {
-              row.push(attendanceMap[student.id]?.[day] || '');
-            }
-            rows.push(row);
-          });
-        });
-      });
-    });
-
-    const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `attendance_${selectedMonth}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const tabs = [
     { id: 'mark', label: 'Mark Attendance' },
-    { id: 'summary', label: 'Summary' }
+    { id: 'summary', label: 'Summary' },
   ];
 
   // Prepare summary data grouped by category
-  const summaryData = React.useMemo(() => {
+  const summaryData = useMemo(() => {
     const summaryGroups: Record<string, { studentCount: number; presentCount: number }> = {};
     students.forEach(student => {
       if (selectedCategory !== 'All' && student.category !== selectedCategory) return;
@@ -307,10 +283,21 @@ const AttendancePage: React.FC = () => {
     return summaryGroups;
   }, [students, attendanceMap, selectedCategory]);
 
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   // Derive unique categories, courses, and years from students for filter dropdowns
   const categories = ['All', ...studentCategories];
@@ -318,199 +305,318 @@ const AttendancePage: React.FC = () => {
   const years = ['All', 1, 2, 3, 4];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Attendance</h1>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Attendance</Text>
         <TabNav tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
-      </div>
+      </View>
 
-       <div className='flex flex-row  gap-4'>
-          <input
-            type="text"
-            id="search"
-            className="input-field"
-            placeholder="Search by name, id, email, course, category, or year"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-           {activeTab === 'mark' && (
-            <button className="btn-primary" disabled={loading} onClick={handleSaveAttendance}>Save Attendance</button>
-          )}
-        </div>
-       
-
-      <div className="flex flex-wrap gap-4 items-center">
-        <div>
-          <label htmlFor="month" className="text-sm font-medium mr-2">Select Month:</label>
-          <input
-            type="month"
-            id="month"
-            className="input-field"
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-          />
-        </div>
-        <div>
-          <label htmlFor="category" className="text-sm font-medium mr-2">Select Category:</label>
-          <select
-            id="category"
-            className="input-field"
-            value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value)}
+      <View style={styles.filtersRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name, id, email, course, category, or year"
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+        />
+        {activeTab === 'mark' && (
+          <TouchableOpacity
+            style={styles.btnPrimary}
+            disabled={loading}
+            onPress={handleSaveAttendance}
           >
-            {categories.map(cat => (
-              <option key={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="course" className="text-sm font-medium mr-2">Select Course:</label>
-          <select
-            id="course"
-            className="input-field"
-            value={selectedCourse}
-            onChange={e => setSelectedCourse(e.target.value)}
-          >
-            {courses.map(course => (
-              <option key={course}>{course}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="year" className="text-sm font-medium mr-2">Select Year:</label>
-          <select
-            id="year"
-            className="input-field"
-            value={selectedYear === 0 ? 'All' : selectedYear}
-            onChange={e => setSelectedYear(e.target.value === 'All' ? 0 : parseInt(e.target.value))}
-          >
-            {years.map(year => (
-              <option key={year} value={year === 'All' ? 'All' : year}>{year}</option>
-            ))}
-          </select>
-        </div>
-        {activeTab === 'summary' && (
-          <button className="btn-secondary flex items-center" onClick={exportToCSV}>
-            <Download className="h-5 w-5 mr-2" />Export
-          </button>
+            <Text style={styles.btnPrimaryText}>Save Attendance</Text>
+          </TouchableOpacity>
         )}
-      </div>
+      </View>
+
+      <View style={styles.filtersRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {categories.map(cat => (
+            <TouchableOpacity
+              key={cat}
+              style={[
+                styles.filterButton,
+                selectedCategory === cat && styles.filterButtonActive,
+              ]}
+              onPress={() => setSelectedCategory(cat)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  selectedCategory === cat && styles.filterButtonTextActive,
+                ]}
+              >
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.filtersRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {courses.map(course => (
+            <TouchableOpacity
+              key={course}
+              style={[
+                styles.filterButton,
+                selectedCourse === course && styles.filterButtonActive,
+              ]}
+              onPress={() => setSelectedCourse(course)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  selectedCourse === course && styles.filterButtonTextActive,
+                ]}
+              >
+                {course}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.filtersRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {years.map(year => (
+            <TouchableOpacity
+              key={year}
+              style={[
+                styles.filterButton,
+                selectedYear === (year === 'All' ? 0 : year) && styles.filterButtonActive,
+              ]}
+              onPress={() => setSelectedYear(year === 'All' ? 0 : Number(year))}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  selectedYear === (year === 'All' ? 0 : year) && styles.filterButtonTextActive,
+                ]}
+              >
+                {year}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {activeTab === 'summary' && (
-        <div className="overflow-auto max-h-[600px] border rounded shadow bg-white p-4">
-          <h2 className="text-lg font-semibold mb-4">Monthly Attendance Summary - {selectedMonth}</h2>
-          <table className="min-w-full border-collapse">
-            <thead className="bg-gray-100 sticky top-0">
-              <tr>
-                <th className="border px-2 py-1 text-left">Category</th>
-                <th className="border px-2 py-1 text-left">Total Students</th>
-                <th className="border px-2 py-1 text-left">Total Present Days</th>
-                <th className="border px-2 py-1 text-left">Average Attendance (%)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(summaryData).map(([category, data]) => {
-                const totalPossibleDays = data.studentCount * daysInMonth;
-                const averageAttendance = totalPossibleDays > 0 ? ((data.presentCount / totalPossibleDays) * 100).toFixed(2) : '0.00';
-                return (
-                  <tr key={category} className="hover:bg-gray-50">
-                    <td className="border px-2 py-1">{category}</td>
-                    <td className="border px-2 py-1">{data.studentCount}</td>
-                    <td className="border px-2 py-1">{data.presentCount}</td>
-                    <td className="border px-2 py-1">{averageAttendance}%</td>
-                  </tr>
-                );
-              })}
-              {Object.keys(summaryData).length === 0 && (
-                <tr><td colSpan={4} className="text-center py-4 text-gray-500">No data available</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ScrollView style={styles.summaryContainer}>
+          <Text style={styles.summaryTitle}>Monthly Attendance Summary - {selectedMonth}</Text>
+          {Object.entries(summaryData).length === 0 ? (
+            <Text style={styles.noDataText}>No data available</Text>
+          ) : (
+            Object.entries(summaryData).map(([category, data]) => {
+              const totalPossibleDays = data.studentCount * daysInMonth;
+              const averageAttendance =
+                totalPossibleDays > 0
+                  ? ((data.presentCount / totalPossibleDays) * 100).toFixed(2)
+                  : '0.00';
+              return (
+                <View key={category} style={styles.summaryRow}>
+                  <Text style={styles.summaryCategory}>{category}</Text>
+                  <Text style={styles.summaryValue}>Total Students: {data.studentCount}</Text>
+                  <Text style={styles.summaryValue}>Total Present Days: {data.presentCount}</Text>
+                  <Text style={styles.summaryValue}>Average Attendance: {averageAttendance}%</Text>
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
       )}
 
       {activeTab === 'mark' && (
-        <>
-          <div className="flex justify-end space-x-2 bg-wzhite p-4 rounded shadow">
-            <button className="btn-primary" disabled={loading} onClick={handleSaveAttendance}>Save Attendance</button>
-          </div>
+        <ScrollView horizontal style={styles.attendanceTableContainer}>
+          <View>
+            <View style={styles.attendanceTableHeader}>
+              <Text style={[styles.cell, styles.headerCell]}>Category</Text>
+              <Text style={[styles.cell, styles.headerCell]}>Course</Text>
+              <Text style={[styles.cell, styles.headerCell]}>Year</Text>
+              <Text style={[styles.cell, styles.headerCell]}>Name</Text>
+              {[...Array(daysInMonth)].map((_, i) => (
+                <Text key={i} style={[styles.cell, styles.headerCell, styles.dayCell]}>
+                  {i + 1}
+                </Text>
+              ))}
+            </View>
 
-          {activeTab === 'mark' && (
-            <>
-              <div className="overflow-auto max-h-[600px] border rounded shadow bg-white">
-                <table className="min-w-full border-collapse">
-                  <thead className="bg-gray-100 sticky top-0">
-                    <tr>
-                      <th
-                        className="border px-2 py-1 text-left cursor-pointer"
-                        onClick={() => requestSort('category')}
-                      >
-                        Category
-                      </th>
-                      <th
-                        className="border px-2 py-1 text-left cursor-pointer"
-                        onClick={() => requestSort('course')}
-                      >
-                        Course
-                      </th>
-                      <th
-                        className="border px-2 py-1 text-left cursor-pointer"
-                        onClick={() => requestSort('year')}
-                      >
-                        Year
-                      </th>
-                      <th
-                        className="border px-2 py-1 text-left cursor-pointer"
-                        onClick={() => requestSort('name')}
-                      >
-                        Name
-                      </th>
-                      {[...Array(daysInMonth)].map((_, i) => (
-                        <th key={i} className="border px-1 py-1 text-center">{i + 1}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(sortedGroupedStudents).map(([category, courses]) =>
-                      Object.entries(courses).map(([course, years]) =>
-                        Object.entries(years).map(([year, studentsList]) =>
-                          studentsList.map(student => (
-                            <tr key={student.id} className="hover:bg-gray-50">
-                              <td className="border px-2 py-1">{category}</td>
-                              <td className="border px-2 py-1">{course}</td>
-                              <td className="border px-2 py-1">{year}</td>
-                              <td className="border px-2 py-1">{student.name}</td>
-                              {[...Array(daysInMonth)].map((_, dayIndex) => {
-                                const day = dayIndex + 1;
-                                const status = attendanceMap[student.id]?.[day] || 'Absent';
-                                const checked = status === 'Present';
-                                return (
-                                  <td key={day} className="border px-1 py-1 text-center">
-                                    <input
-                                      type="checkbox"
-                                      checked={checked}
-                                      aria-label={`Mark attendance for day ${day}`}
-                                      onChange={e => handleStatusChange(student.id, day, e.target.checked ? 'Present' : 'Absent')}
-                                    />
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))
-                        )
-                      )
-                    )}
-                    {students.length === 0 && (
-                      <tr><td colSpan={4 + daysInMonth} className="text-center py-4 text-gray-500">No students found</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </>
-      )};
-    </div>
-  )
-}
+            <FlatList
+              data={Object.entries(sortedGroupedStudents).flatMap(([category, courses]) =>
+                Object.entries(courses).flatMap(([course, years]) =>
+                  Object.entries(years).flatMap(([year, studentsList]) =>
+                    studentsList.map(student => ({
+                      category,
+                      course,
+                      year,
+                      student,
+                    }))
+                  )
+                )
+              )}
+              keyExtractor={item => item.student.id.toString()}
+              renderItem={({ item }) => {
+                const { category, course, year, student } = item;
+                return (
+                  <View style={styles.attendanceTableRow}>
+                    <Text style={styles.cell}>{category}</Text>
+                    <Text style={styles.cell}>{course}</Text>
+                    <Text style={styles.cell}>{year}</Text>
+                    <Text style={styles.cell}>{student.name}</Text>
+                    {[...Array(daysInMonth)].map((_, dayIndex) => {
+                      const day = dayIndex + 1;
+                      const status = attendanceMap[student.id]?.[day] || 'Absent';
+                      const isPresent = status === 'Present';
+                      return (
+                        <Switch
+                          key={day}
+                          value={isPresent}
+                          onValueChange={value =>
+                            handleStatusChange(student.id, day, value ? 'Present' : 'Absent')
+                          }
+                        />
+                      );
+                    })}
+                  </View>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>No students found</Text>
+                </View>
+              }
+            />
+          </View>
+        </ScrollView>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+  },
+  header: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  filtersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 14,
+    marginRight: 8,
+  },
+  btnPrimary: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+  },
+  btnPrimaryText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  filterButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    marginRight: 8,
+  },
+  filterButtonActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  filterButtonText: {
+    color: '#374151',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  summaryContainer: {
+    marginTop: 16,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  summaryRow: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+  },
+  summaryCategory: {
+    fontWeight: '700',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  summaryValue: {
+    fontSize: 14,
+  },
+  noDataText: {
+    textAlign: 'center',
+    color: '#6B7280',
+    marginTop: 20,
+  },
+  noDataContainer: {
+    padding: 20,
+  },
+  attendanceTableContainer: {
+    marginTop: 16,
+  },
+  attendanceTableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#E5E7EB',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  attendanceTableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  cell: {
+    minWidth: 60,
+    paddingHorizontal: 4,
+    fontSize: 12,
+  },
+  headerCell: {
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  dayCell: {
+    minWidth: 24,
+    textAlign: 'center',
+  },
+});
+
 export default AttendancePage;
