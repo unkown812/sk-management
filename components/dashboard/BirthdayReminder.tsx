@@ -15,12 +15,12 @@ const BirthdayReminder: React.FC = () => {
 
   useEffect(() => {
     // Configure push notifications
-    PushNotification.configure({
-      onNotification: function (notification) {
-        console.log('NOTIFICATION:', notification);
-      },
-      requestPermissions: true,
-    });
+    // PushNotification.configure({
+    //   onNotification: function (notification) {
+    //     console.log('NOTIFICATION:', notification);
+    //   },
+    //   requestPermissions: true,
+    // });
 
     const fetchStudentsWithBirthdayToday = async () => {
       try {
@@ -47,10 +47,10 @@ const BirthdayReminder: React.FC = () => {
             setShowReminder(true);
 
             // Show local notification
-            PushNotification.localNotification({
-              title: 'Birthday Reminder',
-              message: `You have ${birthdayStudents.length} student(s) with birthday today.`,
-            });
+            // PushNotification.localNotification({
+            //   title: 'Birthday Reminder',
+            //   message: `You have ${birthdayStudents.length} student(s) with birthday today.`,
+            // });
           } else {
             setBirthdayTodayStudents([]);
             setShowReminder(false);

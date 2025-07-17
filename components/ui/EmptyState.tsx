@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { View, Text, StyleSheet } from 'react-native';
+import { AlertCircle } from 'react-native-feather';
 
 interface EmptyStateProps {
   title: string;
@@ -7,20 +8,49 @@ interface EmptyStateProps {
   icon?: React.ReactNode;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ 
-  title, 
-  message, 
-  icon = <AlertCircle className="h-12 w-12 text-gray-400" />
+const EmptyState: React.FC<EmptyStateProps> = ({
+  title,
+  message,
+  icon = <AlertCircle width={48} height={48} color="#9ca3af" />
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="rounded-full bg-gray-100 p-3">
+    <View style={styles.container}>
+      <View style={styles.iconContainer}>
         {icon}
-      </div>
-      <h3 className="mt-4 text-lg font-medium text-gray-900">{title}</h3>
-      <p className="mt-1 text-sm text-gray-500">{message}</p>
-    </div>
+      </View>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.message}>{message}</Text>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 16,
+    textAlign: 'center',
+  },
+  iconContainer: {
+    backgroundColor: '#f3f4f6', // gray-100
+    borderRadius: 9999,
+    padding: 12,
+  },
+  title: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827', // gray-900
+    textAlign: 'center',
+  },
+  message: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#6b7280', // gray-500
+    textAlign: 'center',
+  },
+});
 
 export default EmptyState;

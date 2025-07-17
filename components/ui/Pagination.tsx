@@ -1,5 +1,6 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { ChevronLeft, ChevronRight } from 'react-native-feather';
 
 interface PaginationProps {
   currentPage: number;
@@ -14,67 +15,125 @@ const Pagination: React.FC<PaginationProps> = ({
 }) => {
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      onPageChange(currentPage + 1);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-      <div className="flex flex-1 justify-between sm:hidden">
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
+    <View style={styles.container}>
+      <View style={styles.navigation}>
+        <TouchableOpacity
+          onPress={handlePrevious}
           disabled={currentPage === 1}
-          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          accessibilityLabel="Previous page"
+          style={[styles.navButton, currentPage === 1 && styles.disabledButton]}
         >
-          Previous
-        </button>
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
+          <ChevronLeft width={24} height={24} color={currentPage === 1 ? '#9ca3af' : '#374151'} />
+          <Text style={[styles.navButtonText, currentPage === 1 && styles.disabledText]}>Previous</Text>
+        </TouchableOpacity>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pagesContainer}>
+          {pages.map((page) => (
+            <TouchableOpacity
+              key={page}
+              onPress={() => onPageChange(page)}
+              accessibilityLabel={`Page ${page}`}
+              style={[
+                styles.pageButton,
+                page === currentPage ? styles.activePageButton : styles.inactivePageButton,
+              ]}
+            >
+              <Text style={page === currentPage ? styles.activePageText : styles.inactivePageText}>{page}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <TouchableOpacity
+          onPress={handleNext}
           disabled={currentPage === totalPages}
-          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          accessibilityLabel="Next page"
+          style={[styles.navButton, currentPage === totalPages && styles.disabledButton]}
         >
-          Next
-        </button>
-      </div>
-      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-gray-700">
-            Page <span className="font-medium">{currentPage}</span> of{' '}
-            <span className="font-medium">{totalPages}</span>
-          </p>
-        </div>
-        <div>
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
-            >
-              <span className="sr-only">Previous</span>
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            {pages.map((page) => (
-              <button
-                key={page}
-                onClick={() => onPageChange(page)}
-                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                  page === currentPage
-                    ? 'z-10 bg-primary text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-                    : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
-            >
-              <span className="sr-only">Next</span>
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </nav>
-        </div>
-      </div>
-    </div>
+          <Text style={[styles.navButtonText, currentPage === totalPages && styles.disabledText]}>Next</Text>
+          <ChevronRight width={24} height={24} color={currentPage === totalPages ? '#9ca3af' : '#374151'} />
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.pageInfo}>
+        Page <Text style={styles.pageInfoBold}>{currentPage}</Text> of <Text style={styles.pageInfoBold}>{totalPages}</Text>
+      </Text>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  navigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#f3f4f6',
+  },
+  navButtonText: {
+    fontSize: 14,
+    color: '#374151',
+    marginHorizontal: 4,
+  },
+  disabledButton: {
+    backgroundColor: '#e5e7eb',
+  },
+  disabledText: {
+    color: '#9ca3af',
+  },
+  pagesContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 12,
+  },
+  pageButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginHorizontal: 2,
+  },
+  activePageButton: {
+    backgroundColor: '#2563eb',
+  },
+  inactivePageButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  activePageText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  inactivePageText: {
+    color: '#374151',
+  },
+  pageInfo: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#374151',
+  },
+  pageInfoBold: {
+    fontWeight: '600',
+  },
+});
 
 export default Pagination;

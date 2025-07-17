@@ -3,7 +3,14 @@ import { View, StyleSheet, TouchableWithoutFeedback, Modal } from 'react-native'
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const Layout: React.FC = ({ children }) => {
+import BottomNavigation from './BottomNavigation';
+
+interface LayoutProps {
+  children: React.ReactNode;
+  navigation?: any;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children, navigation }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -18,15 +25,17 @@ const Layout: React.FC = ({ children }) => {
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
         <View style={styles.sidebarContainer}>
-          <Sidebar onClose={() => setSidebarOpen(false)} />
+          <Sidebar onClose={() => setSidebarOpen(false)} navigation={navigation} />
         </View>
       </Modal>
 
-      <Header openSidebar={() => setSidebarOpen(true)} />
+      <Header openSidebar={() => setSidebarOpen(true)} navigation={navigation} />
 
       <View style={styles.content}>
         {children}
       </View>
+
+      <BottomNavigation navigation={navigation} />
     </View>
   );
 };
@@ -41,7 +50,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(75, 85, 99, 0.6)', 
   },
   sidebarContainer: {
-    position: 'absolute',
+    position: 'relative',
     top: 0,
     bottom: 0,
     left: 0,
