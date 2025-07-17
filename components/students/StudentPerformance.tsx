@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, BookOpen, Filter, Award } from 'lucide-react';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { performanceService } from '../../services/performanceService';
-import type { Database } from '../../lib/database.types';
 
-type Performance = Database['public']['Tables']['performance']['Row'];
+interface Performance {
+  id: number;
+  exam_name: string;
+  date: string;
+  marks: number;
+  total_marks: number;
+  percentage: number;
+}
 
 interface StudentPerformanceProps {
   studentId: string;
 }
+
+const examTypes = ['All', 'Monthly Test', 'Quarterly Exam', 'Mock Test'];
 
 const StudentPerformance: React.FC<StudentPerformanceProps> = ({ studentId }) => {
   const [selectedExamType, setSelectedExamType] = useState('All');
@@ -53,204 +63,356 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({ studentId }) =>
     ? Math.min(...filteredPerformance.map(item => item.percentage))
     : 0;
 
-  // Get exam types for filter
-  const examTypes = ['All', 'Monthly Test', 'Quarterly Exam', 'Mock Test'];
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+        <Text>Loading performance data...</Text>
+      </View>
+    );
+  }
 
-  // Get performance trend data
-  const performanceTrend = [...filteredPerformance].sort((a, b) =>
-    new Date(a.date).getTime() - new Date(b.date).getTime()
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
+    );
+  }
+
+  const renderSummaryCard = (title: string, value: string | number, icon: React.ReactNode, bgColor: string, iconBgColor: string, iconColor: string) => (
+    <View style={[styles.card, { backgroundColor: bgColor }]}>
+      <View style={styles.cardContent}>
+        <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
+          {icon}
+        </View>
+        <View style={styles.cardText}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          <Text style={styles.cardValue}>{value}</Text>
+        </View>
+      </View>
+    </View>
   );
 
-  if (loading) return <div>Loading performance data...</div>;
-  if (error) return <div>Error: {error}</div>;
+  const renderPerformanceBar = (item: Performance, index: number) => {
+    let barColor = '#dc2626'; // red-600
+    if (item.percentage >= 80) barColor = '#16a34a'; // green-600
+    else if (item.percentage >= 60) barColor = '#ca8a04'; // yellow-500
+
+    return (
+      <View key={index} style={styles.barContainer}>
+        <View style={[styles.bar, { height: item.percentage * 1.5, backgroundColor: barColor }]} />
+        <Text style={styles.barLabel}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+        <Text style={styles.barValue}>{item.percentage}%</Text>
+      </View>
+    );
+  };
+
+  const renderPerformanceItem = ({ item }: { item: Performance }) => {
+    let badgeColor = '#dc2626'; // red
+    if (item.percentage >= 80) badgeColor = '#16a34a'; // green
+    else if (item.percentage >= 60) badgeColor = '#ca8a04'; // yellow
+
+    return (
+      <View style={styles.performanceRow}>
+        <Text style={[styles.performanceCell, styles.examName]}>{item.exam_name}</Text>
+        <Text style={[styles.performanceCell, styles.date]}>{new Date(item.date).toLocaleDateString()}</Text>
+        <Text style={[styles.performanceCell, styles.marks]}>{item.marks}</Text>
+        <Text style={[styles.performanceCell, styles.totalMarks]}>{item.total_marks}</Text>
+        <View style={[styles.performanceCell, styles.percentageCell]}>
+          <Text style={[styles.badge, { backgroundColor: badgeColor }]}>{item.percentage}%</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderAnalysis = () => {
+    let strengths = '';
+    let improvements = '';
+    let recommendations = [];
+
+    if (avgPerformance >= 80) {
+      strengths = 'Excellent overall performance. Consistently scoring high marks across subjects.';
+      improvements = 'Could focus on achieving greater consistency across all exam types.';
+      recommendations = [
+        'Join advanced study groups for additional challenges',
+        'Consider participating in competitive exams',
+        'Regular mock tests to simulate exam conditions',
+      ];
+    } else if (avgPerformance >= 70) {
+      strengths = 'Good grasp of core concepts. Strong performance in most subjects with occasional excellence.';
+      improvements = 'Improvement needed in specific challenging areas. Consider more practice tests.';
+      recommendations = [
+        'Schedule additional practice sessions for weaker areas',
+        'Consider participating in competitive exams',
+        'Regular mock tests to simulate exam conditions',
+      ];
+    } else {
+      strengths = 'Shows potential in specific exams. Can build on successful study techniques.';
+      improvements = 'Needs significant work on core concepts and test preparation strategies.';
+      recommendations = [
+        'Attend remedial sessions and increase study hours',
+        'Focus on foundational concepts before advancing',
+        'Regular mock tests to simulate exam conditions',
+      ];
+    }
+
+    return (
+      <View style={styles.analysisContainer}>
+        <Text style={styles.analysisTitle}>Performance Analysis</Text>
+
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisHeading}>Strengths</Text>
+          <Text style={styles.analysisText}>{strengths}</Text>
+        </View>
+
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisHeading}>Areas for Improvement</Text>
+          <Text style={styles.analysisText}>{improvements}</Text>
+        </View>
+
+        <View style={styles.analysisSection}>
+          <Text style={styles.analysisHeading}>Recommendations</Text>
+          {recommendations.map((rec, idx) => (
+            <Text key={idx} style={styles.analysisText}>• {rec}</Text>
+          ))}
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <div className="space-y-6">
+    <ScrollView style={styles.container}>
       {/* Performance summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card bg-blue-50 border-none">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-blue-100">
-              <TrendingUp className="h-6 w-6 text-primary" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-sm text-gray-500">Average Score</h3>
-              <p className="mt-1 text-2xl font-semibold">{avgPerformance}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card bg-green-50 border-none">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-green-100">
-              <Award className="h-6 w-6 text-green-700" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-sm text-gray-500">Highest Score</h3>
-              <p className="mt-1 text-2xl font-semibold text-green-700">{highestPerformance}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card bg-red-50 border-none">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-red-100">
-              <BookOpen className="h-6 w-6 text-red-700" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-sm text-gray-500">Lowest Score</h3>
-              <p className="mt-1 text-2xl font-semibold text-red-700">{lowestPerformance}%</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <View style={styles.summaryContainer}>
+        {renderSummaryCard(
+          'Average Score',
+          `${avgPerformance}%`,
+          <MaterialIcons name="trending-up" size={24} color="#2563eb" />,
+          '#dbeafe',
+          '#bfdbfe',
+          '#2563eb'
+        )}
+        {renderSummaryCard(
+          'Highest Score',
+          `${highestPerformance}%`,
+          <FontAwesome5 name="award" size={24} color="#16a34a" />,
+          '#dcfce7',
+          '#bbf7d0',
+          '#16a34a'
+        )}
+        {renderSummaryCard(
+          'Lowest Score',
+          `${lowestPerformance}%`,
+          <MaterialIcons name="book" size={24} color="#dc2626" />,
+          '#fee2e2',
+          '#fecaca',
+          '#dc2626'
+        )}
+      </View>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h3 className="text-lg font-medium">Performance Details</h3>
-
-        <div className="relative">
-          <select
-            className="input-field appearance-none pr-8"
-            value={selectedExamType}
-            onChange={(e) => setSelectedExamType(e.target.value)}
-            aria-label="Select exam type"
-          >
-            {examTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-            <Filter className="h-4 w-4 text-gray-400" />
-          </div>
-        </div>
-      </div>
+      <View style={styles.filterContainer}>
+        <Text style={styles.filterLabel}>Performance Details</Text>
+        <Picker
+          selectedValue={selectedExamType}
+          onValueChange={(itemValue) => setSelectedExamType(itemValue)}
+          mode="dropdown"
+          style={styles.picker}
+        >
+          {examTypes.map(type => (
+            <Picker.Item key={type} label={type} value={type} />
+          ))}
+        </Picker>
+      </View>
 
       {/* Performance chart */}
-      <div className="card">
-        <h3 className="text-lg font-medium mb-4">Performance Trend</h3>
-
-        {performanceTrend.length > 0 ? (
-          <div className="h-64 flex items-end space-x-4">
-            {performanceTrend.map((item, index) => (
-              <div key={index} className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-full ${
-                    item.percentage >= 80 ? 'bg-green-500' :
-                    item.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                  } rounded-t`}
-                  style={{ height: `${item.percentage * 0.6}%` }}
-                ></div>
-                <div className="text-xs mt-2 text-gray-600 truncate w-full text-center">
-                  {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </div>
-                <div className="text-sm font-medium">{item.percentage}%</div>
-              </div>
-            ))}
-          </div>
+      <ScrollView horizontal contentContainerStyle={styles.chartContainer}>
+        {performance.length > 0 ? (
+          filteredPerformance.map((item, index) => renderPerformanceBar(item, index))
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            No performance data available
-          </div>
+          <Text style={styles.noDataText}>No performance data available</Text>
         )}
-      </div>
+      </ScrollView>
 
       {/* Performance details table */}
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Exam Name</th>
-              <th>Date</th>
-              <th>Marks</th>
-              <th>Total</th>
-              <th>Percentage</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredPerformance.map((item) => (
-              <tr key={item.id}>
-                <td>{item.exam_name}</td>
-                <td>{new Date(item.date).toLocaleDateString()}</td>
-                <td>{item.marks}</td>
-                <td>{item.total_marks}</td>
-                <td>
-                  <span
-                    className={`badge ${
-                      item.percentage >= 80 ? 'badge-green' :
-                      item.percentage >= 60 ? 'badge-yellow' : 'badge-red'
-                    }`}
-                  >
-                    {item.percentage}%
-                  </span>
-                </td>
-              </tr>
-            ))}
-            {filteredPerformance.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center py-4 text-gray-500">
-                  No performance records found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <View style={styles.performanceTableHeader}>
+        <Text style={[styles.performanceCell, styles.examName, styles.headerText]}>Exam Name</Text>
+        <Text style={[styles.performanceCell, styles.date, styles.headerText]}>Date</Text>
+        <Text style={[styles.performanceCell, styles.marks, styles.headerText]}>Marks</Text>
+        <Text style={[styles.performanceCell, styles.totalMarks, styles.headerText]}>Total</Text>
+        <Text style={[styles.performanceCell, styles.percentageCell, styles.headerText]}>Percentage</Text>
+      </View>
+
+      <FlatList
+        data={filteredPerformance}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderPerformanceItem}
+        ListEmptyComponent={<Text style={styles.noRecordsText}>No performance records found</Text>}
+      />
 
       {/* Analysis and recommendations */}
-      <div className="card bg-blue-50 border-blue-100">
-        <h3 className="text-lg font-medium mb-4">Performance Analysis</h3>
-
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-medium text-gray-900">Strengths</h4>
-            <p className="text-gray-700 mt-1">
-              {avgPerformance >= 80 ?
-                "Excellent overall performance. Consistently scoring high marks across subjects." :
-                avgPerformance >= 70 ?
-                "Good grasp of core concepts. Strong performance in most subjects with occasional excellence." :
-                "Shows potential in specific exams. Can build on successful study techniques."
-              }
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-medium text-gray-900">Areas for Improvement</h4>
-            <p className="text-gray-700 mt-1">
-              {avgPerformance >= 80 ?
-                "Could focus on achieving greater consistency across all exam types." :
-                avgPerformance >= 70 ?
-                "Improvement needed in specific challenging areas. Consider more practice tests." :
-                "Needs significant work on core concepts and test preparation strategies."
-              }
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-medium text-gray-900">Recommendations</h4>
-            <ul className="list-disc pl-5 mt-1 text-gray-700 space-y-1">
-              <li>
-                {avgPerformance >= 80 ?
-                  "Join advanced study groups for additional challenges" :
-                  avgPerformance >= 70 ?
-                  "Schedule additional practice sessions for weaker areas" :
-                  "Attend remedial sessions and increase study hours"
-                }
-              </li>
-              <li>
-                {avgPerformance >= 70 ?
-                  "Consider participating in competitive exams" :
-                  "Focus on foundational concepts before advancing"
-                }
-              </li>
-              <li>Regular mock tests to simulate exam conditions</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+      {renderAnalysis()}
+    </ScrollView>
   );
 };
 
-export default StudentPerformance;
+const styles = StyleSheet.create({
+  container: {
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+  },
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  card: {
+    flex: 1,
+    marginHorizontal: 4,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  iconContainer: {
+    padding: 8,
+    borderRadius: 9999,
+    marginRight: 12,
+  },
+  cardText: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  cardValue: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  filterContainer: {
+    marginBottom: 16,
+  },
+  filterLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  picker: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+  },
+  chartContainer: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  barContainer: {
+    width: 40,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  bar: {
+    width: 24,
+    borderRadius: 4,
+  },
+  barLabel: {
+    marginTop: 4,
+    fontSize: 10,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  barValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  performanceTableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d5db',
+    paddingBottom: 8,
+  },
+  performanceRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  performanceCell: {
+    flex: 1,
+    fontSize: 14,
+  },
+  examName: {
+    flex: 2,
+  },
+  date: {
+    flex: 1,
+  },
+  marks: {
+    flex: 1,
+  },
+  totalMarks: {
+    flex: 1,
+  },
+  percentageCell: {
+    flex: 1,
+  },
+  badge: {
+    color: '#fff',
+    fontWeight: '600',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    textAlign: 'center',
+  },
+  noDataText: {
+    textAlign: 'center',
+    color: '#6b7280',
+    paddingVertical: 16,
+  },
+  noRecordsText: {
+    textAlign: 'center',
+    color: '#6b7280',
+    paddingVertical: 16,
+  },
+  headerText: {
+    fontWeight: '600',
+  },
+  analysisContainer: {
+    marginTop: 24,
+  },
+  analysisTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  analysisSection: {
+    marginBottom: 16,
+  },
+  analysisHeading: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  analysisText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+});
 
+export default StudentPerformance;

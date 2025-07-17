@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { CreditCard, FileText, Printer } from 'lucide-react';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import { MaterialIcons, FontAwesome5} from '@expo/vector-icons';
 import { paymentService } from '../../services/paymentService';
-import type { Database } from '../../lib/database.types';
 
-type Payment = Database['public']['Tables']['payments']['Row'];
+interface Payment {
+  id: number;
+  payment_date: string;
+  description: string;
+  amount: number;
+  status: string;
+}
 
 interface StudentFeeHistoryProps {
   studentId: string;
@@ -13,6 +20,11 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
   const [feeHistory, setFeeHistory] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentNotes, setPaymentNotes] = useState('');
 
   useEffect(() => {
     const fetchFeeHistory = async () => {
@@ -37,173 +49,338 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
     .reduce((sum, fee) => sum + fee.amount, 0);
   const totalDue = totalAmount - totalPaid;
 
-  if (loading) return <div>Loading fee history...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+        <Text>Loading fee history...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
+    );
+  }
+
+  const renderPaymentItem = ({ item }: { item: Payment }) => (
+    <View style={styles.paymentRow}>
+      <Text style={[styles.paymentCell, styles.receiptNo]}>R-{item.id.toString().padStart(4, '0')}</Text>
+      <Text style={[styles.paymentCell, styles.date]}>{new Date(item.payment_date).toLocaleDateString()}</Text>
+      <Text style={[styles.paymentCell, styles.description]}>{item.description}</Text>
+      <Text style={[styles.paymentCell, styles.amount]}>₹{item.amount.toLocaleString()}</Text>
+      <View style={[styles.paymentCell, styles.statusCell]}>
+        <Text style={[styles.statusBadge, item.status === 'Paid' ? styles.paidBadge : styles.dueBadge]}>
+          {item.status}
+        </Text>
+      </View>
+      <TouchableOpacity style={[styles.paymentCell, styles.actionCell]} onPress={() => { /* Placeholder for view receipt */ }}>
+        <Text style={styles.actionText}>View Receipt</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
-    <div className="space-y-6">
+    <ScrollView style={styles.container}>
       {/* Fee summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card bg-blue-50 border-none">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Fee</p>
-              <p className="text-2xl font-semibold">₹{totalAmount.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-full bg-blue-100">
-              <CreditCard className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-        </div>
+      <View style={styles.summaryContainer}>
+        <View style={[styles.card, styles.blueCard]}>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle}>Total Fee</Text>
+            <Text style={styles.cardValue}>₹{totalAmount.toLocaleString()}</Text>
+            <MaterialIcons name="credit-card" size={24} color="#2563eb" />
+          </View>
+        </View>
 
-        <div className="card bg-green-50 border-none">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Amount Paid</p>
-              <p className="text-2xl font-semibold text-green-700">₹{totalPaid.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-full bg-green-100">
-              <FileText className="h-6 w-6 text-green-700" />
-            </div>
-          </div>
-        </div>
+        <View style={[styles.card, styles.greenCard]}>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle}>Amount Paid</Text>
+            <Text style={[styles.cardValue, styles.greenText]}>₹{totalPaid.toLocaleString()}</Text>
+            <FontAwesome5 name="file-invoice" size={24} color="#16a34a" />
+          </View>
+        </View>
 
-        <div className="card bg-red-50 border-none">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Amount Due</p>
-              <p className="text-2xl font-semibold text-red-700">₹{totalDue.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-full bg-red-100">
-              <CreditCard className="h-6 w-6 text-red-700" />
-            </div>
-          </div>
-        </div>
-      </div>
+        <View style={[styles.card, styles.redCard]}>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle}>Amount Due</Text>
+            <Text style={[styles.cardValue, styles.redText]}>₹{totalDue.toLocaleString()}</Text>
+            <MaterialIcons name="credit-card" size={24} color="#dc2626" />
+          </View>
+        </View>
+      </View>
 
       {/* Fee receipt list */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium">Payment History</h3>
-          <button className="btn-secondary text-sm flex items-center">
-            <Printer className="h-4 w-4 mr-2" />
-            Print Statement
-          </button>
-        </div>
+      <View style={styles.paymentHistoryHeader}>
+        <Text style={styles.paymentHistoryTitle}>Payment History</Text>
+        <TouchableOpacity style={styles.printButton} onPress={() => { /* Placeholder for print statement */ }}>
+          <MaterialIcons name="print" size={20} color="#2563eb" />
+          <Text style={styles.printButtonText}>Print Statement</Text>
+        </TouchableOpacity>
+      </View>
 
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Receipt No.</th>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {feeHistory.map((fee) => (
-                <tr key={fee.id}>
-                  <td>R-{fee.id.toString().padStart(4, '0')}</td>
-                  <td>{new Date(fee.payment_date).toLocaleDateString()}</td>
-                  <td>{fee.description}</td>
-                  <td>₹{fee.amount.toLocaleString()}</td>
-                  <td>
-                    <span
-                      className={`badge ${fee.status === 'Paid' ? 'badge-green' : 'badge-yellow'}`}
-                    >
-                      {fee.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="text-primary hover:text-primary-dark">
-                      View Receipt
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {feeHistory.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-4 text-gray-500">
-                    No fee history found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <View style={styles.paymentTableHeader}>
+        <Text style={[styles.paymentCell, styles.receiptNo, styles.headerText]}>Receipt No.</Text>
+        <Text style={[styles.paymentCell, styles.date, styles.headerText]}>Date</Text>
+        <Text style={[styles.paymentCell, styles.description, styles.headerText]}>Description</Text>
+        <Text style={[styles.paymentCell, styles.amount, styles.headerText]}>Amount</Text>
+        <Text style={[styles.paymentCell, styles.statusCell, styles.headerText]}>Status</Text>
+        <Text style={[styles.paymentCell, styles.actionCell, styles.headerText]}>Action</Text>
+      </View>
+
+      <FlatList
+        data={feeHistory}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderPaymentItem}
+        ListEmptyComponent={<Text style={styles.noRecordsText}>No fee history found</Text>}
+      />
 
       {/* Payment options (if there is due amount) */}
       {totalDue > 0 && (
-        <div className="mt-6 card bg-blue-50 border-blue-100">
-          <h3 className="text-lg font-medium mb-4">Make a Payment</h3>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Amount (₹)
-              </label>
-              <input
-                type="number"
-                id="amount"
-                name="amount"
-                placeholder="Enter amount"
-                className="input-field"
-                defaultValue={totalDue}
-              />
-            </div>
+        <View style={styles.paymentForm}>
+          <Text style={styles.paymentFormTitle}>Make a Payment</Text>
 
-            <div>
-              <label htmlFor="payment-method" className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Method
-              </label>
-              <select id="payment-method" name="payment-method" className="input-field">
-                <option value="cash">Cash</option>
-                <option value="card">Credit/Debit Card</option>
-                <option value="upi">UPI</option>
-                <option value="netbanking">Net Banking</option>
-                <option value="cheque">Cheque</option>
-              </select>
-            </div>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Payment Amount (₹)</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="Enter amount"
+              value={paymentAmount}
+              onChangeText={setPaymentAmount}
+              defaultValue={totalDue.toString()}
+            />
+          </View>
 
-            <div>
-              <label htmlFor="payment-date" className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Date
-              </label>
-              <input
-                type="date"
-                id="payment-date"
-                name="payment-date"
-                className="input-field"
-                defaultValue={new Date().toISOString().split('T')[0]}
-              />
-            </div>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Payment Method</Text>
+            <Picker
+              selectedValue={paymentMethod}
+              onValueChange={(itemValue) => setPaymentMethod(itemValue)}
+              mode="dropdown"
+            >
+              <Picker.Item label="Cash" value="cash" />
+              <Picker.Item label="Credit/Debit Card" value="card" />
+              <Picker.Item label="UPI" value="upi" />
+              <Picker.Item label="Net Banking" value="netbanking" />
+              <Picker.Item label="Cheque" value="cheque" />
+            </Picker>
+          </View>
 
-            <div>
-              <label htmlFor="payment-notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                id="payment-notes"
-                name="payment-notes"
-                rows={2}
-                placeholder="Add any notes about this payment"
-                className="input-field"
-              ></textarea>
-            </div>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Payment Date</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="YYYY-MM-DD"
+              value={paymentDate}
+              onChangeText={setPaymentDate}
+            />
+          </View>
 
-            <div className="flex justify-end">
-              <button type="button" className="btn-primary">
-                Process Payment
-              </button>
-            </div>
-          </div>
-        </div>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Notes</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              multiline
+              numberOfLines={2}
+              placeholder="Add any notes about this payment"
+              value={paymentNotes}
+              onChangeText={setPaymentNotes}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <TouchableOpacity style={styles.processButton} onPress={() => { /* Placeholder for process payment */ }}>
+              <Text style={styles.processButtonText}>Process Payment</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
-    </div>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+  },
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  card: {
+    flex: 1,
+    marginHorizontal: 4,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  cardTitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  cardValue: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  blueCard: {
+    backgroundColor: '#dbeafe',
+  },
+  greenCard: {
+    backgroundColor: '#dcfce7',
+  },
+  redCard: {
+    backgroundColor: '#fee2e2',
+  },
+  greenText: {
+    color: '#16a34a',
+  },
+  redText: {
+    color: '#dc2626',
+  },
+  paymentHistoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  paymentHistoryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  printButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  printButtonText: {
+    marginLeft: 4,
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  paymentTableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d5db',
+    paddingBottom: 8,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  paymentCell: {
+    flex: 1,
+    fontSize: 14,
+  },
+  receiptNo: {
+    flex: 1,
+  },
+  date: {
+    flex: 1,
+  },
+  description: {
+    flex: 2,
+  },
+  amount: {
+    flex: 1,
+  },
+  statusCell: {
+    flex: 1,
+  },
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  paidBadge: {
+    backgroundColor: '#22c55e',
+    color: '#fff',
+    fontWeight: '600',
+  },
+  dueBadge: {
+    backgroundColor: '#facc15',
+    color: '#000',
+    fontWeight: '600',
+  },
+  actionCell: {
+    flex: 1,
+  },
+  actionText: {
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  noRecordsText: {
+    textAlign: 'center',
+    color: '#6b7280',
+    paddingVertical: 16,
+  },
+  headerText: {
+    fontWeight: '600',
+  },
+  paymentForm: {
+    marginTop: 24,
+    padding: 12,
+    backgroundColor: '#dbeafe',
+    borderRadius: 8,
+  },
+  paymentFormTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  formGroup: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderColor: '#d1d5db',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 14,
+  },
+  textArea: {
+    height: 60,
+    textAlignVertical: 'top',
+  },
+  processButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  processButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+});
 
 export default StudentFeeHistory;
