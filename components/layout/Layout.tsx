@@ -1,38 +1,62 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableWithoutFeedback, Modal } from 'react-native';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const Layout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+const Layout: React.FC = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-scroll bg-white ">
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-20 bg-gray-600 bg-opacity-75 transition-opacity lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-      <div
-        className={`fixed inset-y-0 left-0 z-30 w-64 transform bg-white transition duration-300 ease-in-out lg:static lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+    <View style={styles.container}>
+      <Modal
+        visible={sidebarOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSidebarOpen(false)}
       >
-        <Sidebar onClose={() => setSidebarOpen(false)} />
-      </div>
+        <TouchableWithoutFeedback onPress={() => setSidebarOpen(false)}>
+          <View style={styles.overlay} />
+        </TouchableWithoutFeedback>
+        <View style={styles.sidebarContainer}>
+          <Sidebar onClose={() => setSidebarOpen(false)} />
+        </View>
+      </Modal>
 
-      {/* Main content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header openSidebar={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16">
-          <div className="mx-auto max-w-full skewmorphism-wrapper border">
-            <Outlet />
-          </div>
-        </main>
-      </div>
-    </div>
+      <Header openSidebar={() => setSidebarOpen(true)} />
+
+      <View style={styles.content}>
+        {children}
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(75, 85, 99, 0.6)', 
+  },
+  sidebarContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 280,
+    backgroundColor: '#fff',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 2, height: 0 },
+  },
+  content: {
+    flex: 1,
+    marginTop: 64, 
+  },
+});
 
 export default Layout;
