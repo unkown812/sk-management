@@ -79,8 +79,9 @@ const RecentFeePayments: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+
   },
   centered: {
     flex: 1,

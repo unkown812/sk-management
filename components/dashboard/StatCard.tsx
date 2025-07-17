@@ -39,10 +39,13 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginVertical: 8,
   },
+
   row: {
     flexDirection: 'row',
+    flex: 1,
     alignItems: 'center',
   },
+  
   iconContainer: {
     padding: 12,
     borderRadius: 9999,

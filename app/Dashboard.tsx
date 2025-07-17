@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View, Text } from 'react-native';
+import Layout from '../components/layout/Layout';
 import StatCard from '../components/dashboard/StatCard';
 import RecentFeePayments from '../components/dashboard/RecentFeePayments';
 // import AttendanceChart from '../components/dashboard/AttendanceChart';
@@ -40,75 +41,77 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.subtitle}>
-          Overview of SK Tutorials management system
-        </Text>
-      </View>
-
-      <View style={styles.statsGrid}>
-        <StatCard
-          title="Total Students"
-          value={totalStudents}
-          change={+1}
-          // Replace icon prop with appropriate React Native icon or remove
-          icon={null}
-          color="#1E40AF" // text-blue-800
-          bgcolor="#DBEAFE" // bg-blue-50
-        />
-        <StatCard
-          title="Fee Collection"
-          value={`₹${totalFeesCollected.toLocaleString()}`}
-          change={+8.2}
-          icon={null}
-          color="#166534" // text-green-800
-          bgcolor="#DCFCE7" // bg-green-50
-        />
-      </View>
-
-      {/* Charts and tables section */}
-      <View style={styles.chartsGrid}>
-        {/* Uncomment and convert these components if needed */}
-        {/* <View style={styles.card}>
-          <Text style={styles.cardTitle}>Attendance Overview</Text>
-          <AttendanceChart />
+    <Layout>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Dashboard</Text>
+          <Text style={styles.subtitle}>
+            Overview of SK Tutorials management system
+          </Text>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Performance Overview</Text>
-          <PerformanceWidget />
-        </View> */}
-      </View>
-
-      {/* Tables section */}
-      <View style={styles.tablesGrid}>
-        <View style={[styles.card, styles.overflowHidden]}>
-          <Text style={styles.cardTitle}>Recent Fee Payments</Text>
-          <RecentFeePayments />
+        <View style={styles.statsGrid}>
+          <StatCard
+            title="Total Students"
+            value={totalStudents}
+            change={+1}
+            // Replace icon prop with appropriate React Native icon or remove
+            icon={null}
+            color="#1E40AF" // text-blue-800
+            bgcolor="#DBEAFE" // bg-blue-50
+          />
+          <StatCard
+            title="Fee Collection"
+            value={`₹${totalFeesCollected.toLocaleString()}`}
+            change={+8.2}
+            icon={null}
+            color="#166534" // text-green-800
+            bgcolor="#DCFCE7" // bg-green-50
+          />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Upcoming Exams</Text>
-          <UpcomingExams />
-        </View>
-      </View>
+        {/* Charts and tables section */}
+        <View style={styles.chartsGrid}>
+          {/* Uncomment and convert these components if needed */}
+          {/* <View style={styles.card}>
+            <Text style={styles.cardTitle}>Attendance Overview</Text>
+            <AttendanceChart />
+          </View>
 
-      <View style={styles.singleCardGrid}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Due Date Reminders</Text>
-          <DueDateReminder />
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Performance Overview</Text>
+            <PerformanceWidget />
+          </View> */}
         </View>
-      </View>
 
-      <View style={styles.singleCardGrid}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Birthday Reminders</Text>
-          <BirthdayReminder />
+        {/* Tables section */}
+        <View style={styles.tablesGrid}>
+          <View style={[styles.card, styles.overflowHidden]}>
+            <Text style={styles.cardTitle}>Recent Fee Payments</Text>
+            <RecentFeePayments />
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Upcoming Exams</Text>
+            <UpcomingExams />
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        <View style={styles.singleCardGrid}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Due Date Reminders</Text>
+            <DueDateReminder />
+          </View>
+        </View>
+
+        <View style={styles.singleCardGrid}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Birthday Reminders</Text>
+            <BirthdayReminder />
+          </View>
+        </View>
+      </ScrollView>
+    </Layout>
   );
 };
 
