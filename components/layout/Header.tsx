@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     paddingHorizontal: 16,
     justifyContent: 'space-between',
+    marginVertical: 16,
   },
   menuButton: {
     padding: 8,

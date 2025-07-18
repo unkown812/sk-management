@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useUser } from '../../context/UserContext';
-// Replace lucide-react icons with react-native-vector-icons or placeholders
 import { MaterialIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 
 interface SidebarProps {
@@ -11,6 +10,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onClose, navigation }) => {
   const { logout } = useUser();
+  const [selectedRoute, setSelectedRoute] = useState('Dashboard');
 
   const navItems = [
     { name: 'Dashboard', icon: <MaterialIcons name="dashboard" size={20} color="#374151" />, route: 'Dashboard' },
@@ -23,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose, navigation }) => {
   ];
 
   const handleNavigate = (route: string) => {
+    setSelectedRoute(route);
     if (navigation && navigation.navigate) {
       navigation.navigate(route);
       if (onClose) onClose();
@@ -48,11 +49,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose, navigation }) => {
         {navItems.map((item) => (
           <TouchableOpacity
             key={item.name}
-            style={styles.navItem}
+            style={[styles.navItem, selectedRoute === item.route && styles.navItemSelected]}
             onPress={() => handleNavigate(item.route)}
           >
             {item.icon}
-            <Text style={styles.navText}>{item.name}</Text>
+            <Text style={[styles.navText, selectedRoute === item.route && styles.navTextSelected]}>{item.name}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -69,14 +70,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#6b7280', // gray-500
+    backgroundColor: '#fff',
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
     paddingTop: 40,
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
     marginBottom: 20,
   },
   logoContainer: {
@@ -92,29 +94,39 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827', // gray-900
+    color: '#111827',
   },
   closeButton: {
     padding: 8,
+    marginLeft: 'auto',
   },
   navContainer: {
     flex: 1,
-    paddingHorizontal: 16,
+    width: '100%',
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  navItemSelected: {
+    backgroundColor: '#2563eb', // blue-600
   },
   navText: {
     marginLeft: 12,
     fontSize: 16,
-    color: '#374151', // gray-700
+    color: '#374151',
+  },
+  navTextSelected: {
+    color: '#fff',
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: '#d1d5db', // gray-300
-    padding: 16,
+    borderTopColor: '#d1d5db',
+    paddingVertical: 16,
+    width: '100%',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -123,7 +135,7 @@ const styles = StyleSheet.create({
   logoutText: {
     marginLeft: 8,
     fontSize: 16,
-    color: '#dc2626', // red-600
+    color: '#dc2626',
   },
 });
 

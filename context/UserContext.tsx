@@ -1,5 +1,8 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import supabase from '../lib/supabase';
+
+// Removed AsyncStorage import due to missing module error
 
 interface User {
   id: string;
@@ -31,7 +34,7 @@ interface UserProviderProps {
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('sk_tutorials_user');
+    const savedUser = null; // fallback since AsyncStorage is not available
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
@@ -79,7 +82,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           role: data.user.user_metadata?.role || 'user',
         };
         setUser(loggedInUser);
-        localStorage.setItem('sk_tutorials_user', JSON.stringify(loggedInUser));
+        // localStorage.setItem removed due to environment
         return true;
       }
 
@@ -100,7 +103,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     }
     setUser(null);
-    localStorage.removeItem('sk_tutorials_user');
+    // localStorage.removeItem removed due to environment
   };
 
   const value = {
